@@ -6,3 +6,8 @@ dashboardPage(
   dashboardSiderbar(),
   dashboardBody()
 )
+
+
+function(input, output, session) {
+  
+}
