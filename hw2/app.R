@@ -2,6 +2,8 @@ library(shiny)
 library(shinydashboard)
 library(dplyr)
 library(DT)
+library(plotly)
+library(ggplot2)
 
 # load datasets
 data_source <- USArrests
@@ -11,8 +13,13 @@ states <- rownames(data_source)
 
 data_source <- data_source %>%
   mutate(State=states)
+  
 
-str(data_source)
+# choices for selectInput 
+c1 <- data_source %>%
+  select(-State) %>%
+  names()
+
 
 
 # Define UI for application that draws a histogram
@@ -27,7 +34,8 @@ ui <- dashboardPage(
       
       #first menuitem
       menuItem("Dataset", tabName = "data", icon=icon("chart-line")),
-      menuItem(text = "Visualization", tabName = "viz", icon=icon("chart-line"))
+      menuItem(text = "Visualization", tabName = "viz", icon=icon("chart-line")),
+      selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape")
     )
   ),
   dashboardBody(
@@ -48,7 +56,7 @@ ui <- dashboardPage(
       tabItem(tabName = "viz",
               tabBox(id="t2", width = 12,
               tabPanel(title = "graph1", value = "trends", h4("tabPanel-1 placeholder UI")),
-              tabPanel(title = "graph2", value = "trends", h4("tabPanel-2 placeholder UI")),
+              tabPanel(title = "graph2", value = "distro", plotlyOutput("histplot")),
               tabPanel(title = "graph3", value = "trends", h4("tabPanel-3 placeholder UI"))
                      )
               )
@@ -61,6 +69,27 @@ server <- function(input, output) {
   output$dataT <- renderDataTable(
     data_source
   )
+  
+  # stacked histogram and boxplot
+  output$histplot <- renderPlotly({
+    p1 = data_source %>%
+      plot_ly() %>%
+      add_histogram(~get(input$var1)) %>%
+      layout(xaxis = list(title = input$var1))
+    
+    # box plot
+    p2 = data_source %>%
+      plot_ly() %>%
+      add_boxplot(~get(input$var1)) %>%
+      layout(yaxis = list(showticklables = F))
+    
+    # stacking plots
+    subplot(p2, p1, nrows = 2) %>%
+      hide_legend() %>%
+      layout(title = "Distribution chart - Histogram and Boxplot",
+             yaxis = list(title="Frequency"))
+    
+  })
 }
 
 # Run the application 
