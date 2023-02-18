@@ -48,7 +48,7 @@ ui <- dashboardPage(
               tabBox(id="t1", width=12,
                      tabPanel("About", icon=icon("address-card"), fluidRow(
                        column(width = 4, tags$br(),
-                              tags$p("Introduction of this dataset"))
+                              tags$p("The statistics for arrests per 100,000 residents for assault, murder, and rape in each of the 50 US states in 1973 are included in the base R data set. Additionally, information on the percentage of the population residing in urban areas is provided."))
                      )),
                      tabPanel(title = "Data", icon=icon("address-card"), dataTableOutput("dataT"))
               )
