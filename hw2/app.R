@@ -42,11 +42,7 @@ ui <- dashboardPage(
       
       #first menuitem
       menuItem("Dataset", tabName = "data", icon=icon("chart-line")),
-      menuItem(text = "Visualization", tabName = "viz", icon=icon("chart-line")),
-      selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape"),
-      selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
-      selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult"),
-      selectInput(inputId = "var4" , label ="Select the Arrest type" , choices = c2)
+      menuItem(text = "Visualization", tabName = "viz", icon=icon("chart-line"))
     )
   ),
   dashboardBody(
@@ -71,12 +67,13 @@ ui <- dashboardPage(
                                        tags$div(align="center", box(tableOutput("low5"), title = textOutput("head2") , collapsible = TRUE, status = "primary",  collapsed = TRUE, solidHeader = TRUE))
                                        
                               ),
-                              plotlyOutput("bar")
+                              plotlyOutput("bar"), selectInput(inputId = "var4" , label ="Select the Arrest type" , choices = c2)
                      ),
-              tabPanel(title = "graph2", value = "distro", plotlyOutput("histplot")),
+              tabPanel(title = "graph2", value = "distro", plotlyOutput("histplot"), selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape")),
               tabPanel("Relationship among Arrest types & Urban Population", 
                        radioButtons(inputId ="fit" , label = "Select smooth method", choices = c("loess", "lm"), selected = "lm" , inline = TRUE), 
-                       plotlyOutput("scatter"), value="relation"),
+                       plotlyOutput("scatter"), value="relation", selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
+                       selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult"),),
               side = "left"
                     ),
               )
