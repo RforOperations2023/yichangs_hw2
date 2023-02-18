@@ -5,6 +5,7 @@ library(DT)
 library(plotly)
 library(ggplot2)
 library(ggtext)
+library(ggcorrplot)
 
 # load datasets
 data_source <- USArrests
@@ -18,9 +19,13 @@ data_source <- data_source %>%
 
 # choices for selectInput 
 c1 <- data_source %>%
-  select(-State) %>%
+  select(-"State") %>%
   names()
 
+# Column names without state and UrbanPopulation. This will be used in the selectinput for choices in the shinydashboard
+c2 = data_source %>% 
+  select(-"State", -"UrbanPop") %>% 
+  names()
 
 
 
@@ -40,7 +45,8 @@ ui <- dashboardPage(
       menuItem(text = "Visualization", tabName = "viz", icon=icon("chart-line")),
       selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape"),
       selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
-      selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult")
+      selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult"),
+      selectInput(inputId = "var4" , label ="Select the Arrest type" , choices = c2)
     )
   ),
   dashboardBody(
@@ -60,7 +66,13 @@ ui <- dashboardPage(
       # second tab item or landing page
       tabItem(tabName = "viz",
               tabBox(id="t2", width = 12,
-              tabPanel(title = "graph1", value = "trends", h4("tabPanel-1 placeholder UI")),
+                     tabPanel("Crime Trends by State", value="trends",
+                              fluidRow(tags$div(align="center", box(tableOutput("top5"), title = textOutput("head1") , collapsible = TRUE, status = "primary",  collapsed = TRUE, solidHeader = TRUE)),
+                                       tags$div(align="center", box(tableOutput("low5"), title = textOutput("head2") , collapsible = TRUE, status = "primary",  collapsed = TRUE, solidHeader = TRUE))
+                                       
+                              ),
+                              plotlyOutput("bar")
+                     ),
               tabPanel(title = "graph2", value = "distro", plotlyOutput("histplot")),
               tabPanel("Relationship among Arrest types & Urban Population", 
                        radioButtons(inputId ="fit" , label = "Select smooth method", choices = c("loess", "lm"), selected = "lm" , inline = TRUE), 
@@ -121,7 +133,46 @@ server <- function(input, output) {
     
   })
   
+  ### Bar Charts - State wise trend
+  output$bar <- renderPlotly({
+    data_source %>% 
+      plot_ly() %>% 
+      add_bars(x=~State, y=~get(input$var4)) %>% 
+      layout(title = paste("Statewise Arrests for", input$var4),
+             xaxis = list(title = "State"),
+             yaxis = list(title = paste(input$var4, "Arrests per 100,000 residents") ))
+  })
   
+  
+  # Render the box header
+  output$head1 <- renderText(
+    paste("5 states with high rate of", input$var4, "Arrests")
+  )
+  
+  # Render the box header
+  output$head2 <- renderText(
+    paste("5 states with low rate of", input$var4, "Arrests")
+  )
+  
+  # Render table with 5 states with high arrests for specific crime type
+  output$top5 <- renderTable({
+    
+    # Top 5 states with high rates
+    data_source %>%
+      select(State, input$var4) %>%
+      arrange(desc(get(input$var4))) %>%
+      head(5)
+  })
+  
+  
+  # Render table with 5 states with high arrests for specific crime type
+  output$low5 <- renderTable({
+    # Top 5 states with low rates
+    data_source %>%
+      select(State, input$var4) %>%
+      arrange(get(input$var4)) %>%
+      head(5)
+  })
 }
 
 # Run the application 
