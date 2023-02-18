@@ -4,6 +4,7 @@ library(dplyr)
 library(DT)
 library(plotly)
 library(ggplot2)
+library(ggtext)
 
 # load datasets
 data_source <- USArrests
@@ -22,6 +23,8 @@ c1 <- data_source %>%
 
 
 
+
+
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
   dashboardHeader(title = "Exploring the world population from Year 1995 to Year 2013",
@@ -35,7 +38,9 @@ ui <- dashboardPage(
       #first menuitem
       menuItem("Dataset", tabName = "data", icon=icon("chart-line")),
       menuItem(text = "Visualization", tabName = "viz", icon=icon("chart-line")),
-      selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape")
+      selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape"),
+      selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
+      selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult")
     )
   ),
   dashboardBody(
@@ -57,12 +62,19 @@ ui <- dashboardPage(
               tabBox(id="t2", width = 12,
               tabPanel(title = "graph1", value = "trends", h4("tabPanel-1 placeholder UI")),
               tabPanel(title = "graph2", value = "distro", plotlyOutput("histplot")),
-              tabPanel(title = "graph3", value = "trends", h4("tabPanel-3 placeholder UI"))
-                     )
+              tabPanel("Relationship among Arrest types & Urban Population", 
+                       radioButtons(inputId ="fit" , label = "Select smooth method", choices = c("loess", "lm"), selected = "lm" , inline = TRUE), 
+                       plotlyOutput("scatter"), value="relation"),
+              side = "left"
+                    ),
               )
     )
   )
 )
+
+
+
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
@@ -90,6 +102,26 @@ server <- function(input, output) {
              yaxis = list(title="Frequency"))
     
   })
+  
+  ### Scatter Charts 
+  output$scatter <- renderPlotly({
+    p = data_source %>% 
+      ggplot(aes(x=get(input$var2), y=get(input$var3))) +
+      geom_point() +
+      geom_smooth(method=get(input$fit)) +
+      labs(title = paste("Relation between", input$var2 , "and" , input$var3),
+           x = input$var2,
+           y = input$var3) +
+      theme(plot.title = element_textbox_simple(size=10,
+                                                  halign=0.5))
+    
+    
+    # applied ggplot to make it interactive
+    ggplotly(p)
+    
+  })
+  
+  
 }
 
 # Run the application 
