@@ -1,5 +1,19 @@
 library(shiny)
 library(shinydashboard)
+library(dplyr)
+library(DT)
+
+# load datasets
+data_source <- USArrests
+
+# assign row names
+states <- rownames(data_source)
+
+data_source <- data_source %>%
+  mutate(State=states)
+
+str(data_source)
+
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
@@ -22,8 +36,11 @@ ui <- dashboardPage(
       tabItem(tabName = "data",
               #tab box
               tabBox(id="t1", width=12,
-                     tabPanel("About", icon=icon("address-card"), h4("tabpanel 1 ")),
-                     tabPanel(title = "Data", icon=icon("address-card"), h2("tabpanel 2 "))
+                     tabPanel("About", icon=icon("address-card"), fluidRow(
+                       column(width = 4, tags$br(),
+                              tags$p("Introduction of this dataset"))
+                     )),
+                     tabPanel(title = "Data", icon=icon("address-card"), dataTableOutput("dataT"))
                      )
               ),
       
@@ -41,7 +58,9 @@ ui <- dashboardPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
+  output$dataT <- renderDataTable(
+    data_source
+  )
 }
 
 # Run the application 
