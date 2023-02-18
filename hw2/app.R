@@ -10,13 +10,10 @@ library(ggcorrplot)
 # load datasets
 data_source <- USArrests
 
-# assign row names
 states <- rownames(data_source)
-
 data_source <- data_source %>%
   mutate(State=states)
   
-
 # choices for selectInput 
 c1 <- data_source %>%
   select(-"State") %>%
@@ -67,9 +64,9 @@ ui <- dashboardPage(
                                        tags$div(align="center", box(tableOutput("low5"), title = textOutput("head2") , collapsible = TRUE, status = "primary",  collapsed = TRUE, solidHeader = TRUE))
                                        
                               ),
-                              plotlyOutput("bar"), selectInput(inputId = "var4" , label ="Select the Arrest type" , choices = c2)
+                              plotOutput(outputId = "bar"), selectInput(inputId = "var4" , label ="Select the Arrest type" , choices = c2)
                      ),
-              tabPanel(title = "graph2", value = "distro", plotlyOutput("histplot"), selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape")),
+              tabPanel(title = "Distribution", value = "distro", plotlyOutput("histplot"), selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape")),
               tabPanel("Relationship among Arrest types & Urban Population", 
                        radioButtons(inputId ="fit" , label = "Select smooth method", choices = c("loess", "lm"), selected = "lm" , inline = TRUE), 
                        plotlyOutput("scatter"), value="relation", selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
@@ -80,8 +77,6 @@ ui <- dashboardPage(
     )
   )
 )
-
-
 
 
 
@@ -129,15 +124,13 @@ server <- function(input, output) {
     ggplotly(p)
     
   })
+
   
   ### Bar Charts - State wise trend
-  output$bar <- renderPlotly({
-    data_source %>% 
-      plot_ly() %>% 
-      add_bars(x=~State, y=~get(input$var4)) %>% 
-      layout(title = paste("Statewise Arrests for", input$var4),
-             xaxis = list(title = "State"),
-             yaxis = list(title = paste(input$var4, "Arrests per 100,000 residents") ))
+  output$bar <- renderPlot({
+    ggplot(data = data_source, aes_string(x = "State", y = input$var4)) + geom_bar(stat = "identity", fill="orange") +
+      theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+      labs(title=paste0(input$var4, "Arrests per 100,000 residents"))
   })
   
   
@@ -151,9 +144,7 @@ server <- function(input, output) {
     paste("5 states with low rate of", input$var4, "Arrests")
   )
   
-  # Render table with 5 states with high arrests for specific crime type
-  output$top5 <- renderTable({
-    
+  top5.table <- reactive({
     # Top 5 states with high rates
     data_source %>%
       select(State, input$var4) %>%
@@ -161,14 +152,22 @@ server <- function(input, output) {
       head(5)
   })
   
-  
   # Render table with 5 states with high arrests for specific crime type
-  output$low5 <- renderTable({
+  output$top5 <- renderTable({
+    top5.table()
+  })
+  
+  low5.table <- reactive({
     # Top 5 states with low rates
     data_source %>%
       select(State, input$var4) %>%
       arrange(get(input$var4)) %>%
       head(5)
+  })
+  
+  # Render table with 5 states with high arrests for specific crime type
+  output$low5 <- renderTable({
+    low5.table()
   })
 }
 
