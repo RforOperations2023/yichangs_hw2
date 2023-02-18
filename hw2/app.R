@@ -13,7 +13,7 @@ data_source <- USArrests
 states <- rownames(data_source)
 data_source <- data_source %>%
   mutate(State=states)
-  
+
 # choices for selectInput 
 c1 <- data_source %>%
   select(-"State") %>%
@@ -25,13 +25,11 @@ c2 = data_source %>%
   names()
 
 
-
-
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
-  dashboardHeader(title = "Exploring the world population from Year 1995 to Year 2013",
+  dashboardHeader(title = "Exploring the US Arrests Data with Different Types of Crime",
                   titleWidth = 650
-                  ),
+  ),
   dashboardSidebar(
     # sidebarmenu
     sidebarMenu(
@@ -53,12 +51,25 @@ ui <- dashboardPage(
                               tags$p("Introduction of this dataset"))
                      )),
                      tabPanel(title = "Data", icon=icon("address-card"), dataTableOutput("dataT"))
-                     )
-              ),
+              )
+      ),
       
       # second tab item or landing page
       tabItem(tabName = "viz",
               tabBox(id="t2", width = 12,
+                     tabPanel(title = "Distribution", value = "distro", 
+                              fluidRow(tags$div(align="center", box(
+                                title = "Crime summary", 
+                                solidHeader = TRUE, 
+                                status = "primary", 
+                                width = 4, 
+                                textOutput("crime_summary")))
+                              ),
+                              plotlyOutput("histplot"), selectInput(inputId = "var1", label = "select the state", choices = c1, selected="Murder")),
+                     tabPanel("Relationship among Arrest types & Urban Population", 
+                              radioButtons(inputId ="fit" , label = "Select smooth method", choices = c("loess", "lm"), selected = "lm" , inline = TRUE), 
+                              plotlyOutput("scatter"), value="relation", selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
+                              selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult")),
                      tabPanel("Crime Trends by State", value="trends",
                               fluidRow(tags$div(align="center", box(tableOutput("top5"), title = textOutput("head1") , collapsible = TRUE, status = "primary",  collapsed = TRUE, solidHeader = TRUE)),
                                        tags$div(align="center", box(tableOutput("low5"), title = textOutput("head2") , collapsible = TRUE, status = "primary",  collapsed = TRUE, solidHeader = TRUE))
@@ -66,14 +77,9 @@ ui <- dashboardPage(
                               ),
                               plotOutput(outputId = "bar"), selectInput(inputId = "var4" , label ="Select the Arrest type" , choices = c2)
                      ),
-              tabPanel(title = "Distribution", value = "distro", plotlyOutput("histplot"), selectInput(inputId = "var1", label = "select the variable", choices = c1, selected="Rape")),
-              tabPanel("Relationship among Arrest types & Urban Population", 
-                       radioButtons(inputId ="fit" , label = "Select smooth method", choices = c("loess", "lm"), selected = "lm" , inline = TRUE), 
-                       plotlyOutput("scatter"), value="relation", selectInput(inputId = "var2", label = "select the x variable", choices = c1, selected="Rape"),
-                       selectInput(inputId = "var3", label = "select the y variable", choices = c1, selected="Assult"),),
-              side = "left"
-                    ),
-              )
+                     side = "left"
+              ),
+      )
     )
   )
 )
@@ -88,23 +94,11 @@ server <- function(input, output) {
   
   # stacked histogram and boxplot
   output$histplot <- renderPlotly({
+    # box plot
     p1 = data_source %>%
       plot_ly() %>%
-      add_histogram(~get(input$var1)) %>%
-      layout(xaxis = list(title = input$var1))
-    
-    # box plot
-    p2 = data_source %>%
-      plot_ly() %>%
       add_boxplot(~get(input$var1)) %>%
-      layout(yaxis = list(showticklables = F))
-    
-    # stacking plots
-    subplot(p2, p1, nrows = 2) %>%
-      hide_legend() %>%
-      layout(title = "Distribution chart - Histogram and Boxplot",
-             yaxis = list(title="Frequency"))
-    
+      layout(xaxis = list(title = paste(input$var1)))
   })
   
   ### Scatter Charts 
@@ -117,14 +111,14 @@ server <- function(input, output) {
            x = input$var2,
            y = input$var3) +
       theme(plot.title = element_textbox_simple(size=10,
-                                                  halign=0.5))
+                                                halign=0.5))
     
     
     # applied ggplot to make it interactive
     ggplotly(p)
     
   })
-
+  
   
   ### Bar Charts - State wise trend
   output$bar <- renderPlot({
@@ -142,6 +136,11 @@ server <- function(input, output) {
   # Render the box header
   output$head2 <- renderText(
     paste("5 states with low rate of", input$var4, "Arrests")
+  )
+  
+  # Render the box header
+  output$head3 <- renderText(
+    paste("Average arrests for different types of murder")
   )
   
   top5.table <- reactive({
@@ -169,7 +168,13 @@ server <- function(input, output) {
   output$low5 <- renderTable({
     low5.table()
   })
+  
+  output$crime_summary <- renderText(paste("The average arrests for Murder is ", mean(data_source$Murder),".",
+                                           "The average arrests for Rape is ", mean(data_source$Rape),".",
+                                           "The average arrests for Assault is ", mean(data_source$Assault)))
 }
+
+
 
 # Run the application 
 shinyApp(ui = ui, server = server)
